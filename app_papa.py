@@ -1,93 +1,49 @@
 
 import streamlit as st
 
-
-# Título de la app
-st.title("Calculadora de PAPA")
+# Título de la aplicación
+st.title("Cálculo del PAPA")
 
 st.write("Esta app fue elaborada por Felipe Devia.")
 
-st.markdown("""
-Esta aplicación permite calcular el **PAPA** global y por tipología de asignatura. 
-Por favor, ingresa los datos de tus asignaturas cursadas.
-""")
 
-# Inicializar valores en el estado de la sesión
-if "form_data" not in st.session_state:
-    st.session_state["form_data"] = []
-if "num_asignaturas" not in st.session_state:
-    st.session_state["num_asignaturas"] = 1
+# Obtener los datos del usuario
+num_materias = st.number_input("Ingrese el número de materias cursadas:", min_value=1)
 
-# Función para actualizar el número de asignaturas en el estado
-def actualizar_num_asignaturas():
-    st.session_state["form_data"] = [
-        {
-            "materia": "",
-            "calificacion": 0.0,
-            "creditos": 1,
-            "tipologia": "DISCIPLINAR OPTATIVA"
-        } for _ in range(st.session_state["num_asignaturas"])
-    ]
+materias = []
+for i in range(num_materias):
+    materia = {}
+    materia['nombre'] = st.text_input(f"Nombre de la materia {i+1}:")
+    materia['tipologia'] = st.selectbox(f"Tipología de la materia {i+1}:", options=["DISCIPLINAR OPTATIVA", "FUND. OBLIGATORIA", "FUND. OPTATIVA", "DISCIPLINAR OBLIGATORIA", "LIBRE ELECCIÓN", "TRABAJO DE GRADO"])
+    materia['calificacion'] = st.number_input(f"Calificación de la materia {i+1}:", min_value=0.0, max_value=5.0)
+    materia['creditos'] = st.number_input(f"Créditos de la materia {i+1}:", min_value=1)
+    materias.append(materia)
 
-# Selección del número de asignaturas
-st.header("Configuración inicial")
-num_asignaturas = st.number_input(
-    "Número de asignaturas:", 
-    min_value=1, step=1, value=st.session_state["num_asignaturas"], 
-    on_change=actualizar_num_asignaturas, key="num_asignaturas"
-)
+# Calcular el PAPA
+suma_productos = 0
+total_creditos = 0
+for materia in materias:
+    if materia['calificacion'] > 0:
+        suma_productos += materia['calificacion'] * materia['creditos']
+        total_creditos += materia['creditos']
 
-# Mostrar formulario dinámico
-st.header("Datos de las asignaturas")
+# Verificar si se puede calcular el PAPA
+if total_creditos > 1:
+    papa = suma_productos / total_creditos
+    st.success(f"El PAPA calculado es: {papa:.2f}")
+else:
+    st.warning("No se puede calcular el PAPA con los datos ingresados.")
 
-# Crear el formulario para ingresar los datos de las asignaturas
-with st.form("form_papa"):
-    for i, asignatura in enumerate(st.session_state["form_data"]):
-        st.subheader(f"Asignatura {i + 1}")
-        asignatura["materia"] = st.text_input(f"Nombre de la asignatura {i + 1}", value=asignatura["materia"], key=f"materia_{i}")
-        asignatura["calificacion"] = st.number_input(
-            f"Calificación (0.0 - 5.0) de {asignatura['materia']}", 
-            min_value=0.0, max_value=5.0, step=0.1, value=asignatura["calificacion"], key=f"calificacion_{i}")
-        asignatura["creditos"] = st.number_input(
-            f"Número de créditos de {asignatura['materia']}", 
-            min_value=1, step=1, value=asignatura["creditos"], key=f"creditos_{i}")
-        asignatura["tipologia"] = st.selectbox(
-            f"Tipología de {asignatura['materia']}",
-            options=["DISCIPLINAR OPTATIVA", "FUND. OBLIGATORIA", "FUND. OPTATIVA", 
-                     "DISCIPLINAR OBLIGATORIA", "LIBRE ELECCIÓN", "TRABAJO DE GRADO"],
-            index=["DISCIPLINAR OPTATIVA", "FUND. OBLIGATORIA", "FUND. OPTATIVA", 
-                   "DISCIPLINAR OBLIGATORIA", "LIBRE ELECCIÓN", "TRABAJO DE GRADO"].index(asignatura["tipologia"]),
-            key=f"tipologia_{i}")
-    
-    # Botón para calcular
-    calcular = st.form_submit_button("Calcular PAPA")
+# Mostrar el desglose por tipología (opcional)
+if st.checkbox("Mostrar desglose por tipología"):
+    tipologias = {}
+    for materia in materias:
+        if materia['calificacion'] > 0:
+            if materia['tipologia'] not in tipologias:
+                tipologias[materia['tipologia']] = {'suma_productos': 0, 'total_creditos': 0}
+            tipologias[materia['tipologia']]['suma_productos'] += materia['calificacion'] * materia['creditos']
+            tipologias[materia['tipologia']]['total_creditos'] += materia['creditos']
 
-# Procesar datos al calcular
-if calcular:
-    # Filtrar asignaturas válidas
-    asignaturas_validas = [
-        (a["materia"], a["calificacion"], a["creditos"], a["tipologia"]) 
-        for a in st.session_state["form_data"] if a["calificacion"] > 0
-    ]
-    
-    if len(asignaturas_validas) < 2:
-        st.warning("No se puede calcular el PAPA. Debes tener al menos 2 asignaturas con calificación numérica.")
-    else:
-        # Cálculo del PAPA global
-        total_peso = sum(cal * cred for _, cal, cred, _ in asignaturas_validas)
-        total_creditos = sum(cred for _, _, cred, _ in asignaturas_validas)
-        papa_global = total_peso / total_creditos
-        
-        st.success(f"Tu PAPA global es: **{papa_global:.2f}**")
-        
-        # Cálculo del PAPA por tipología
-        st.subheader("PAPA por tipología")
-        for tipologia in set(a["tipologia"] for a in st.session_state["form_data"]):
-            asignaturas_tipologia = [
-                (cal, cred) for _, cal, cred, t in asignaturas_validas if t == tipologia
-            ]
-            if asignaturas_tipologia:
-                peso_tipologia = sum(cal * cred for cal, cred in asignaturas_tipologia)
-                creditos_tipologia = sum(cred for _, cred in asignaturas_tipologia)
-                papa_tipologia = peso_tipologia / creditos_tipologia
-                st.write(f"- **{tipologia}**: {papa_tipologia:.2f}")
+    for tipologia, datos in tipologias.items():
+        papa_tipologia = datos['suma_productos'] / datos['total_creditos']
+        st.write(f"PAPA para {tipologia}: {papa_tipologia:.2f}")
