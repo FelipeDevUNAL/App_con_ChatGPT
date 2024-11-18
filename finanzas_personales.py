@@ -7,24 +7,30 @@ import numpy as np
 # Título de la app
 st.title("Registro de Finanzas Personales")
 
-# Entradas de presupuesto, ingresos y gastos
+# Autor de la aplicación
+st.write("Esta app fue elaborada por Felipe Devia.")
+
+# Datos de presupuesto y meta de ahorro (se ingresan solo una vez)
+if 'presupuesto' not in st.session_state:
+    st.session_state.presupuesto = st.number_input("Presupuesto total", min_value=0.0, step=1000.0)
+    st.session_state.meta_ahorro = st.number_input("Meta de ahorro mensual", min_value=0.0, step=100.0)
+    st.session_state.meta_ahorro_alcanzada = None
+    st.session_state.presupuesto_superado = None
+
+# Entradas de ingresos y gastos
 st.header("Ingresos y Gastos")
 ingreso = st.number_input("Ingresos totales", min_value=0.0, step=1000.0)
-presupuesto = st.number_input("Presupuesto total", min_value=0.0, step=1000.0)
 gastos = st.number_input("Gastos totales", min_value=0.0, step=1000.0)
-
-# Definir las metas de ahorro
-meta_ahorro = st.number_input("Meta de ahorro mensual", min_value=0.0, step=100.0)
 
 # Crear un DataFrame para almacenar los registros de finanzas
 if 'finanzas' not in st.session_state:
-    st.session_state.finanzas = pd.DataFrame(columns=["Fecha", "Ingresos", "Presupuesto", "Gastos", "Meta Ahorro"])
+    st.session_state.finanzas = pd.DataFrame(columns=["Fecha", "Ingresos", "Gastos"])
 
-# Registrar las finanzas con la fecha actual
+# Registrar los ingresos y gastos con la fecha actual
 if st.button("Guardar registro"):
     fecha_actual = pd.to_datetime("today").strftime("%Y-%m-%d")
-    nuevo_registro = pd.DataFrame([[fecha_actual, ingreso, presupuesto, gastos, meta_ahorro]],
-                                  columns=["Fecha", "Ingresos", "Presupuesto", "Gastos", "Meta Ahorro"])
+    nuevo_registro = pd.DataFrame([[fecha_actual, ingreso, gastos]],
+                                  columns=["Fecha", "Ingresos", "Gastos"])
     st.session_state.finanzas = pd.concat([st.session_state.finanzas, nuevo_registro], ignore_index=True)
     st.success(f"Registro guardado para {fecha_actual}.")
 
@@ -32,26 +38,30 @@ if st.button("Guardar registro"):
 st.subheader("Registros de Finanzas")
 st.dataframe(st.session_state.finanzas)
 
-# Convertir la columna "Fecha" a formato datetime
-st.session_state.finanzas["Fecha"] = pd.to_datetime(st.session_state.finanzas["Fecha"])
+# Calcular si se superó el presupuesto y si se alcanzó la meta de ahorro
+total_gastos = st.session_state.finanzas["Gastos"].sum()
+total_ingresos = st.session_state.finanzas["Ingresos"].sum()
 
-# Cálculos de diferencias
-st.subheader("Diferencias entre lo presupuestado y lo real")
+# Comprobar si el presupuesto fue superado
+st.session_state.presupuesto_superado = total_gastos > st.session_state.presupuesto
 
-# Calcular la diferencia semanal
-finanzas_semanales = st.session_state.finanzas.set_index("Fecha").resample('W').sum()
-finanzas_semanales["Diferencia Presupuesto vs Real"] = finanzas_semanales["Presupuesto"] - finanzas_semanales["Gastos"]
-st.write("Reporte Semanal")
-st.dataframe(finanzas_semanales[["Ingresos", "Presupuesto", "Gastos", "Diferencia Presupuesto vs Real"]])
+# Calcular si se alcanzó la meta de ahorro
+ahorro_real = total_ingresos - total_gastos
+st.session_state.meta_ahorro_alcanzada = ahorro_real >= st.session_state.meta_ahorro
 
-# Calcular la diferencia mensual
-finanzas_mensuales = st.session_state.finanzas.set_index("Fecha").resample('M').sum()
-finanzas_mensuales["Diferencia Presupuesto vs Real"] = finanzas_mensuales["Presupuesto"] - finanzas_mensuales["Gastos"]
-st.write("Reporte Mensual")
-st.dataframe(finanzas_mensuales[["Ingresos", "Presupuesto", "Gastos", "Diferencia Presupuesto vs Real"]])
+# Mostrar resultados
+st.subheader("Resumen")
+st.write(f"Total de ingresos: {total_ingresos:.2f}")
+st.write(f"Total de gastos: {total_gastos:.2f}")
 
-# Análisis de ahorro
-st.subheader("Análisis de Ahorro")
-ahorro_total = st.session_state.finanzas["Ingresos"].sum() - st.session_state.finanzas["Gastos"].sum()
-st.write(f"Ahorro total acumulado: {ahorro_total:.2f}")
-st.write(f"Meta de ahorro mensual: {meta_ahorro:.2f}")
+# Verificar si el presupuesto fue superado
+if st.session_state.presupuesto_superado:
+    st.write("¡El presupuesto ha sido superado!")
+else:
+    st.write("No se ha superado el presupuesto.")
+
+# Verificar si se alcanzó la meta de ahorro
+if st.session_state.meta_ahorro_alcanzada:
+    st.write(f"¡Meta de ahorro alcanzada! Ahorro real: {ahorro_real:.2f}")
+else:
+    st.write(f"No se alcanzó la meta de ahorro. Ahorro real: {ahorro_real:.2f}")
