@@ -22,7 +22,7 @@ categoria_ingreso = st.text_input('Categoría de Ingreso')
 
 if st.button('Registrar Ingreso'):
     nuevo_ingreso = {
-        'Fecha': fecha_ingreso,
+        'Fecha': pd.to_datetime(fecha_ingreso),  # Convertir a datetime
         'Monto': monto_ingreso,
         'Categoria': categoria_ingreso
     }
@@ -37,7 +37,7 @@ categoria_gasto = st.text_input('Categoría de Gasto')
 
 if st.button('Registrar Gasto'):
     nuevo_gasto = {
-        'Fecha': fecha_gasto,
+        'Fecha': pd.to_datetime(fecha_gasto),  # Convertir a datetime
         'Monto': monto_gasto,
         'Categoria': categoria_gasto
     }
@@ -116,6 +116,11 @@ st.subheader('Reporte Semanal')
 # Filtrar por semana
 fecha_actual = datetime.today()
 semana_actual = fecha_actual.isocalendar()[1]
+
+# Asegurarse de que las fechas son datetime
+st.session_state.ingresos['Fecha'] = pd.to_datetime(st.session_state.ingresos['Fecha'])
+st.session_state.gastos['Fecha'] = pd.to_datetime(st.session_state.gastos['Fecha'])
+
 ingresos_semanales = st.session_state.ingresos[st.session_state.ingresos['Fecha'].dt.isocalendar().week == semana_actual]
 gastos_semanales = st.session_state.gastos[st.session_state.gastos['Fecha'].dt.isocalendar().week == semana_actual]
 
