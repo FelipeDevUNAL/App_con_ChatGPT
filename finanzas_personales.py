@@ -3,24 +3,20 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Título de la app
-st.title('Registro de Finanzas Personales')
-
-# Crear DataFrames vacíos para cada módulo
+# Inicializar los estados de sesión para ingresos, gastos y metas si no existen
 if 'ingresos' not in st.session_state:
     st.session_state.ingresos = pd.DataFrame(columns=['Fecha', 'Monto', 'Categoria'])
 if 'gastos' not in st.session_state:
     st.session_state.gastos = pd.DataFrame(columns=['Fecha', 'Monto', 'Categoria'])
 if 'metas' not in st.session_state:
-    st.session_state.metas = {'ahorro': 0, 'presupuesto_ingresos': 0, 'presupuesto_gastos': 0, 'periodo': 'mensual'}
-
-# Opciones de selección para módulos
-opciones = ['Ingreso', 'Gasto', 'Meta de Ahorro y Presupuesto']
-opcion_seleccionada = st.selectbox("Selecciona el módulo", opciones)
+    st.session_state.metas = pd.DataFrame(columns=['Meta', 'Monto', 'Frecuencia', 'Fecha'])
 
 # Función para convertir fecha a datetime
 def convertir_fecha(fecha):
-    return pd.to_datetime(fecha)
+    return datetime.strptime(str(fecha), '%Y-%m-%d')
+
+# Formulario para seleccionar el módulo (Ingreso, Gasto o Meta)
+opcion_seleccionada = st.sidebar.radio("Selecciona una opción", ('Ingreso', 'Gasto', 'Meta'))
 
 # Formulario para ingresar datos de ingresos
 if opcion_seleccionada == 'Ingreso':
@@ -35,7 +31,7 @@ if opcion_seleccionada == 'Ingreso':
             'Monto': monto_ingreso,
             'Categoria': categoria_ingreso
         }
-        st.session_state.ingresos = st.session_state.ingresos.append(nuevo_ingreso, ignore_index=True)
+        st.session_state.ingresos = pd.concat([st.session_state.ingresos, pd.DataFrame([nuevo_ingreso])], ignore_index=True)
         st.success('Ingreso registrado correctamente')
 
 # Formulario para ingresar datos de gastos
@@ -51,102 +47,65 @@ elif opcion_seleccionada == 'Gasto':
             'Monto': monto_gasto,
             'Categoria': categoria_gasto
         }
-        st.session_state.gastos = st.session_state.gastos.append(nuevo_gasto, ignore_index=True)
+        st.session_state.gastos = pd.concat([st.session_state.gastos, pd.DataFrame([nuevo_gasto])], ignore_index=True)
         st.success('Gasto registrado correctamente')
 
-# Formulario para definir metas y presupuesto
-elif opcion_seleccionada == 'Meta de Ahorro y Presupuesto':
-    st.subheader('Establecer Metas de Ahorro y Presupuesto')
-
-    meta_ahorro = st.number_input('Meta de Ahorro', min_value=0, step=100)
-    presupuesto_ingresos = st.number_input('Presupuesto de Ingresos', min_value=0, step=100)
-    presupuesto_gastos = st.number_input('Presupuesto de Gastos', min_value=0, step=100)
-
-    # Selección del periodo (mensual o semanal)
-    periodo = st.selectbox('Periodo de la meta', ('mensual', 'semanal'))
-
-    if st.button('Guardar Meta y Presupuesto'):
-        st.session_state.metas['ahorro'] = meta_ahorro
-        st.session_state.metas['presupuesto_ingresos'] = presupuesto_ingresos
-        st.session_state.metas['presupuesto_gastos'] = presupuesto_gastos
-        st.session_state.metas['periodo'] = periodo
-        st.success('Meta y presupuesto guardados correctamente')
-
-    # Mostrar las metas y presupuesto
-    st.write(f"### Meta de Ahorro: {st.session_state.metas['ahorro']}")
-    st.write(f"### Presupuesto de Ingresos: {st.session_state.metas['presupuesto_ingresos']}")
-    st.write(f"### Presupuesto de Gastos: {st.session_state.metas['presupuesto_gastos']}")
-    st.write(f"### Periodo: {st.session_state.metas['periodo']}")
-
-# Selección de reporte (semanal o mensual)
-reporte_tipo = st.selectbox("Selecciona el tipo de reporte", ['Semanal', 'Mensual'])
-
-# Obtener fecha actual
-fecha_actual = datetime.today()
-
-# Filtrar los ingresos y gastos según la fecha (semanal o mensual)
-if reporte_tipo == 'Semanal':
-    semana_actual = fecha_actual.isocalendar()[1]
+# Formulario para ingresar metas de ahorro
+elif opcion_seleccionada == 'Meta':
+    st.subheader('Formulario de Metas de Ahorro')
+    meta = st.text_input('Meta de Ahorro')
+    monto_meta = st.number_input('Monto Objetivo de Ahorro', min_value=0, step=100)
+    frecuencia = st.radio('Frecuencia de la Meta', ['Semanal', 'Mensual'])
+    fecha_meta = st.date_input('Fecha de la Meta', datetime.today())
     
-    # Filtrar los ingresos y gastos por la semana actual
-    st.session_state.ingresos['Fecha'] = pd.to_datetime(st.session_state.ingresos['Fecha'])
-    st.session_state.gastos['Fecha'] = pd.to_datetime(st.session_state.gastos['Fecha'])
+    if st.button('Registrar Meta de Ahorro'):
+        nueva_meta = {
+            'Meta': meta,
+            'Monto': monto_meta,
+            'Frecuencia': frecuencia,
+            'Fecha': convertir_fecha(fecha_meta)
+        }
+        st.session_state.metas = pd.concat([st.session_state.metas, pd.DataFrame([nueva_meta])], ignore_index=True)
+        st.success('Meta de Ahorro registrada correctamente')
+
+# Reporte de ingresos y gastos por semana o mes
+if st.sidebar.checkbox('Generar Reporte'):
+    reporte_opcion = st.sidebar.selectbox('Seleccionar Reporte', ['Semanal', 'Mensual'])
+    semana_actual = datetime.today().isocalendar()[1]
     
-    ingresos_semanales = st.session_state.ingresos[st.session_state.ingresos['Fecha'].dt.isocalendar().week == semana_actual]
-    gastos_semanales = st.session_state.gastos[st.session_state.gastos['Fecha'].dt.isocalendar().week == semana_actual]
+    # Filtrar los ingresos y gastos por semana o mes
+    if reporte_opcion == 'Semanal':
+        ingresos_semanales = st.session_state.ingresos[st.session_state.ingresos['Fecha'].dt.isocalendar().week == semana_actual]
+        gastos_semanales = st.session_state.gastos[st.session_state.gastos['Fecha'].dt.isocalendar().week == semana_actual]
+    else:
+        ingresos_semanales = st.session_state.ingresos[st.session_state.ingresos['Fecha'].dt.month == datetime.today().month]
+        gastos_semanales = st.session_state.gastos[st.session_state.gastos['Fecha'].dt.month == datetime.today().month]
     
-    st.write(f"### Ingresos Semanales (Semana {semana_actual})")
+    # Mostrar reportes
+    st.write(f"**Reporte {reporte_opcion}**")
+    st.write(f"**Ingresos**")
     st.write(ingresos_semanales)
-    st.write(f"Total Ingresos Semana: {ingresos_semanales['Monto'].sum()}")
-
-    st.write(f"### Gastos Semanales (Semana {semana_actual})")
+    st.write(f"**Gastos**")
     st.write(gastos_semanales)
-    st.write(f"Total Gastos Semana: {gastos_semanales['Monto'].sum()}")
     
-elif reporte_tipo == 'Mensual':
-    mes_actual = fecha_actual.month
+    # Calcular y mostrar las diferencias
+    ingresos_totales = ingresos_semanales['Monto'].sum()
+    gastos_totales = gastos_semanales['Monto'].sum()
     
-    # Filtrar los ingresos y gastos por el mes actual
-    ingresos_mensuales = st.session_state.ingresos[st.session_state.ingresos['Fecha'].dt.month == mes_actual]
-    gastos_mensuales = st.session_state.gastos[st.session_state.gastos['Fecha'].dt.month == mes_actual]
+    st.write(f"**Total Ingresos:** {ingresos_totales}")
+    st.write(f"**Total Gastos:** {gastos_totales}")
+    st.write(f"**Balance:** {ingresos_totales - gastos_totales}")
+
+# Reporte de metas de ahorro
+if st.sidebar.checkbox('Generar Reporte de Metas de Ahorro'):
+    metas_actuales = st.session_state.metas
+    st.write("**Reporte de Metas de Ahorro**")
+    st.write(metas_actuales)
     
-    st.write(f"### Ingresos Mensuales (Mes {mes_actual})")
-    st.write(ingresos_mensuales)
-    st.write(f"Total Ingresos Mes: {ingresos_mensuales['Monto'].sum()}")
-
-    st.write(f"### Gastos Mensuales (Mes {mes_actual})")
-    st.write(gastos_mensuales)
-    st.write(f"Total Gastos Mes: {gastos_mensuales['Monto'].sum()}")
-
-# Cálculos de diferencias entre lo real y lo presupuestado
-st.subheader('Diferencias entre lo Real y lo Presupuestado')
-
-# Calcular las sumas de los ingresos y los gastos
-total_ingresos = st.session_state.ingresos['Monto'].sum()
-total_gastos = st.session_state.gastos['Monto'].sum()
-
-# Calcular las diferencias
-diferencia_ingresos = total_ingresos - st.session_state.metas['presupuesto_ingresos']
-diferencia_gastos = total_gastos - st.session_state.metas['presupuesto_gastos']
-
-# Mostrar los resultados
-st.write(f"Total Ingresos: {total_ingresos}")
-st.write(f"Total Gastos: {total_gastos}")
-st.write(f"Diferencia de Ingresos (Real - Presupuesto): {diferencia_ingresos}")
-st.write(f"Diferencia de Gastos (Real - Presupuesto): {diferencia_gastos}")
-
-# Comprobar si las metas fueron superadas
-if total_ingresos > st.session_state.metas['presupuesto_ingresos']:
-    st.write("¡Has superado el presupuesto de ingresos!")
-else:
-    st.write("No has superado el presupuesto de ingresos.")
-
-if total_gastos < st.session_state.metas['presupuesto_gastos']:
-    st.write("¡Has ahorrado, ya que tus gastos están por debajo del presupuesto!")
-else:
-    st.write("No has ahorrado, tus gastos superan el presupuesto.")
-
-if total_ingresos >= st.session_state.metas['ahorro']:
-    st.write("¡Has alcanzado tu meta de ahorro!")
-else:
-    st.write(f"No has alcanzado tu meta de ahorro. Te falta {st.session_state.metas['ahorro'] - total_ingresos}.")
+    # Calcular si se ha alcanzado la meta de ahorro
+    for index, meta in metas_actuales.iterrows():
+        monto_actual = st.session_state.gastos[st.session_state.gastos['Fecha'] <= meta['Fecha']]['Monto'].sum()
+        if monto_actual >= meta['Monto']:
+            st.write(f"Meta alcanzada: {meta['Meta']} con monto ahorrado de {monto_actual}")
+        else:
+            st.write(f"Meta no alcanzada: {meta['Meta']} con monto ahorrado de {monto_actual}")
