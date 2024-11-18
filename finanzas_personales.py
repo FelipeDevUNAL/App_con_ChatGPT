@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -30,6 +31,9 @@ if st.button("Guardar registro"):
 # Mostrar los registros
 st.subheader("Registros de Finanzas")
 st.dataframe(st.session_state.finanzas)
+
+# Convertir la columna "Fecha" a formato datetime
+st.session_state.finanzas["Fecha"] = pd.to_datetime(st.session_state.finanzas["Fecha"])
 
 # Cálculos de diferencias
 st.subheader("Diferencias entre lo presupuestado y lo real")
