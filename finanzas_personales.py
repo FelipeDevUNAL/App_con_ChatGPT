@@ -1,12 +1,10 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 
 # Título de la app
 st.title('Registro de Finanzas Personales')
-
-st.write("Esta app fue elaborada por Felipe Devia.")
-
 
 # Crear un DataFrame vacío para guardar los datos de ingresos, gastos, y metas
 if 'ingresos' not in st.session_state:
