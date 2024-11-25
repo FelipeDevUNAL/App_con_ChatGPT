@@ -1,4 +1,5 @@
 
+!pip install openpyxl --quiet
 
 import re
 import pandas as pd
@@ -57,6 +58,7 @@ def generar_dataframe():
 # Aplicación Streamlit
 def main():
     st.title("Procesador de Archivo CSV")
+    st.write("Esta app fue elaborada por Felipe Devia.")  
     st.write("Esta aplicación procesa el archivo [regex_productos.csv](https://github.com/gabrielawad/programacion-para-ingenieria/blob/main/archivos-datos/regex/regex_productos.csv) y genera un archivo Excel con la información solicitada.")
     
     # Botón para generar el Excel
