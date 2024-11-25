@@ -32,6 +32,7 @@ def validar_fecha(fecha):
 
 def main():
     st.title("Validador de Formularios Web")
+    st.write("Esta app fue elaborada por Felipe Devia.")
     st.write("Esta aplicación valida los siguientes campos: Nombres, Correo Electrónico, Teléfono y Fecha.")
 
     # Campos del formulario
