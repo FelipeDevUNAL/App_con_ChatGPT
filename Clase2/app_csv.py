@@ -45,10 +45,12 @@ def generar_dataframe():
         resultado = procesar_linea(linea)
         if resultado:
             data.append({
+                "Nombre del Cliente": resultado["nombre_cliente"],
+                "Correo Electrónico": resultado["correo"],
                 "ID del Producto": resultado["id_producto"],
                 "Valor": resultado["valor"],
-                "Fecha de Compra del Producto": resultado["fecha"],
-                "Información de Contacto del Cliente": f"{resultado['nombre_cliente']} | {resultado['correo']} | {resultado['telefono']}"
+                "Teléfono": resultado["telefono"],
+                "Fecha de Compra": resultado["fecha"]
             })
     return pd.DataFrame(data)
 
@@ -64,11 +66,16 @@ def main():
             # Generar el DataFrame procesado
             df = generar_dataframe()
             
+            # Verificar si hay datos procesados
+            if df.empty:
+                st.warning("El archivo procesado no contiene datos válidos. Verifique el formato del archivo fuente.")
+                return
+            
             # Guardar como CSV
             csv_file = "procesado_productos.csv"
             df.to_csv(csv_file, index=False)
 
-            # Agregar un enlace clickeable en la cabecera del archivo CSV
+            # Mostrar enlace de descarga
             st.write("Descarga el archivo procesado a continuación:")
             with open(csv_file, "rb") as file:
                 st.download_button(
