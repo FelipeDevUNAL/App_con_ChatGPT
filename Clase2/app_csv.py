@@ -1,14 +1,4 @@
 
-
-import os
-import sys
-
-# Instalar openpyxl si no está disponible
-try:
-    import openpyxl
-except ImportError:
-    os.system(f"{sys.executable} -m pip install openpyxl --quiet")
-
 import re
 import pandas as pd
 import requests
@@ -36,7 +26,6 @@ def procesar_linea(linea):
         r"(?P<fecha>\d{2}/\d{2}/\d{2})"                         # Fecha de compra
     )
 
-
     match = patron.search(linea)
     if match:
         return match.groupdict()
@@ -56,10 +45,10 @@ def generar_dataframe():
         resultado = procesar_linea(linea)
         if resultado:
             data.append({
-                "Número de serie del producto": "N/A",  # Sin número de serie en el archivo
+                "ID del Producto": resultado["id_producto"],
                 "Valor": resultado["valor"],
-                "Fecha de compra del producto": resultado["fecha"],
-                "Información de contacto de clientes": f"{resultado['nombre_cliente']} | {resultado['correo']} | {resultado['telefono']}"
+                "Fecha de Compra del Producto": resultado["fecha"],
+                "Información de Contacto del Cliente": f"{resultado['nombre_cliente']} | {resultado['correo']} | {resultado['telefono']}"
             })
     return pd.DataFrame(data)
 
@@ -67,26 +56,26 @@ def generar_dataframe():
 def main():
     st.title("Procesador de Archivo CSV")
     st.write("Esta app fue elaborada por Felipe Devia.")  
-    st.write("Esta aplicación procesa el archivo [regex_productos.csv](https://github.com/gabrielawad/programacion-para-ingenieria/blob/main/archivos-datos/regex/regex_productos.csv) y genera un archivo Excel con la información solicitada.")
+    st.write("Esta aplicación procesa el archivo [regex_productos.csv](https://github.com/gabrielawad/programacion-para-ingenieria/blob/main/archivos-datos/regex/regex_productos.csv) y genera un archivo CSV con la información solicitada.")
     
-    # Botón para generar el Excel
-    if st.button("Procesar Archivo y Descargar Excel"):
+    # Botón para generar el CSV
+    if st.button("Procesar Archivo y Descargar CSV"):
         try:
             # Generar el DataFrame procesado
             df = generar_dataframe()
             
-            # Guardar como Excel
-            excel_file = "procesado_productos.xlsx"
-            df.to_excel(excel_file, index=False)
+            # Guardar como CSV
+            csv_file = "procesado_productos.csv"
+            df.to_csv(csv_file, index=False)
 
-            # Agregar un enlace clickeable en la cabecera del archivo Excel
+            # Agregar un enlace clickeable en la cabecera del archivo CSV
             st.write("Descarga el archivo procesado a continuación:")
-            with open(excel_file, "rb") as file:
+            with open(csv_file, "rb") as file:
                 st.download_button(
-                    label="📥 Descargar Excel Procesado",
+                    label="📥 Descargar CSV Procesado",
                     data=file,
-                    file_name=excel_file,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    file_name=csv_file,
+                    mime="text/csv",
                 )
         except Exception as e:
             st.error(f"Ocurrió un error al procesar el archivo: {str(e)}")
