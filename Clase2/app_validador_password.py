@@ -39,18 +39,23 @@ def evaluar_contrasena(contrasena):
         return False, ", ".join(sugerencias)
 
 def main():
-  st.title("Evaluador de Contraseñas")
+    st.title("Evaluador de Contraseñas")
 
-  st.write("Esta app fue elaborada por Felipe Devia.")
+    st.write("Esta app fue elaborada por Felipe Devia.")
 
+    # Input para la contraseña
+    contrasena = st.text_input("Ingrese su contraseña")
 
-  # Input para la contraseña
-  contrasena = st.text_input("Ingrese su contraseña")
-
-  # Botón para evaluar
-  if st.button("Evaluar"):
-    es_segura, mensaje = evaluar_contrasena(contrasena)
-    st.success(mensaje) if es_segura else st.error(mensaje)
+    # Botón para evaluar
+    if st.button("Evaluar"):
+        try:
+            if not contrasena:
+                st.error("Por favor, ingrese una contraseña antes de evaluar.")
+            else:
+                es_segura, mensaje = evaluar_contrasena(contrasena)
+                st.success(mensaje) if es_segura else st.error(mensaje)
+        except Exception as e:
+            st.error(f"Ocurrió un error inesperado: {e}")
 
 if __name__ == "__main__":
-  main()
+    main()
