@@ -11,6 +11,7 @@ URL_CSV = "https://raw.githubusercontent.com/gabrielawad/programacion-para-ingen
 def descargar_archivo_csv(url):
     response = requests.get(url)
     if response.status_code == 200:
+        st.write("Archivo descargado correctamente.")
         return response.text
     else:
         raise Exception(f"No se pudo descargar el archivo. Código de estado: {response.status_code}")
@@ -28,8 +29,10 @@ def procesar_linea(linea):
 
     match = patron.search(linea)
     if match:
+        st.write(f"Procesada línea válida: {linea}")  # Depuración
         return match.groupdict()
     else:
+        st.warning(f"No coincide el patrón: {linea}")  # Depuración
         return None
 
 # Función para generar el DataFrame procesado
@@ -38,6 +41,10 @@ def generar_dataframe():
 
     # Descargar el archivo CSV
     contenido_csv = descargar_archivo_csv(URL_CSV)
+    
+    # Mostrar una muestra del contenido del CSV para depuración
+    st.write("Contenido del archivo CSV (primeras 5 líneas):")
+    st.write("\n".join(contenido_csv.splitlines()[:5]))
     
     # Procesar cada línea
     for linea in contenido_csv.splitlines():
@@ -52,6 +59,14 @@ def generar_dataframe():
                 "Teléfono": resultado["telefono"],
                 "Fecha de Compra": resultado["fecha"]
             })
+    
+    # Mostrar las primeras filas de los datos procesados
+    if data:
+        st.write("Primeras filas de los datos procesados:")
+        st.write(data[:5])
+    else:
+        st.warning("No se encontraron datos válidos.")
+
     return pd.DataFrame(data)
 
 # Aplicación Streamlit
