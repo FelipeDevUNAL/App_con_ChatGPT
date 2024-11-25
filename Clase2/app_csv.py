@@ -1,6 +1,4 @@
 
-!pip install openpyxl --quiet
-
 import re
 import pandas as pd
 import requests
