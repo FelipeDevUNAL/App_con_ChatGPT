@@ -1,106 +1,109 @@
 
+import streamlit as st
 import re
 import pandas as pd
 import requests
-import streamlit as st
 
-# URL del archivo en el repositorio
+# URL del archivo CSV
 URL_CSV = "https://raw.githubusercontent.com/gabrielawad/programacion-para-ingenieria/main/archivos-datos/regex/regex_productos.csv"
 
-# Función para descargar el archivo desde el repositorio
+# Función para descargar el archivo
 def descargar_archivo_csv(url):
     response = requests.get(url)
     if response.status_code == 200:
-        st.write("Archivo descargado correctamente.")
         return response.text
     else:
         raise Exception(f"No se pudo descargar el archivo. Código de estado: {response.status_code}")
 
-# Función para procesar cada línea del archivo y extraer la información
+# Función para procesar una línea
 def procesar_linea(linea):
-    patron = re.compile(
-        r"(?P<nombre_cliente>[A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\s+"  # Primer nombre con apellido
-        r"(?P<correo>\S+@\S+)\s+"                               # Correo electrónico
-        r"(?P<id_producto>\d+)\s+"                              # ID del producto (solo números)
-        r"(?P<valor>\d+\.\d+)\s+"                               # Valor del producto
-        r"(?P<telefono>\+57\s\d{10})\s+"                        # Teléfono
-        r"(?P<fecha>\d{2}/\d{2}/\d{2})"                         # Fecha de compra
-    )
+    # Dividir la línea en valores separados por comas
+    valores = linea.split(",")
 
-    match = patron.search(linea)
-    if match:
-        st.write(f"Procesada línea válida: {linea}")  # Depuración
-        return match.groupdict()
+    # Patrones regex para identificar los campos
+    patrones = {
+        "correo": r"\S+@\S+",
+        "valor": r"\d+\.\d+",
+        "telefono": r"\+57\s\d{10}",
+        "fecha": r"\d{2}/\d{2}/\d{2}",
+        "nombre_cliente": r"[A-Z][a-z]+(?:\s[A-Z][a-z]+)*",
+        "id_producto": r"^\d+$"  # Solo números enteros
+    }
+
+    fila = {
+        "Correo": None,
+        "Valor": None,
+        "Teléfono": None,
+        "Fecha de compra": None,
+        "Nombre del cliente": None,
+        "ID del producto": None
+    }
+
+    # Analizar cada valor para identificarlo
+    for valor in valores:
+        valor = valor.strip()
+        if re.match(patrones["correo"], valor):
+            fila["Correo"] = valor
+        elif re.match(patrones["valor"], valor):
+            fila["Valor"] = valor
+        elif re.match(patrones["telefono"], valor):
+            fila["Teléfono"] = valor
+        elif re.match(patrones["fecha"], valor):
+            fila["Fecha de compra"] = valor
+        elif re.match(patrones["id_producto"], valor):
+            fila["ID del producto"] = valor
+        elif re.match(patrones["nombre_cliente"], valor):
+            if fila["Nombre del cliente"] is None:  # Tomar el primer nombre que coincida
+                fila["Nombre del cliente"] = valor
+
+    # Validar que se identificaron todos los campos necesarios
+    if all(fila.values()):
+        return fila
     else:
-        st.warning(f"No coincide el patrón: {linea}")  # Depuración
+        st.warning(f"No se identificaron todos los campos en la línea: {linea}")
         return None
 
-# Función para generar el DataFrame procesado
+# Función para generar el DataFrame
 def generar_dataframe():
     data = []
 
     # Descargar el archivo CSV
     contenido_csv = descargar_archivo_csv(URL_CSV)
-    
-    # Mostrar una muestra del contenido del CSV para depuración
-    st.write("Contenido del archivo CSV (primeras 5 líneas):")
-    st.write("\n".join(contenido_csv.splitlines()[:5]))
-    
+
     # Procesar cada línea
     for linea in contenido_csv.splitlines():
-        linea = linea.strip()
         resultado = procesar_linea(linea)
         if resultado:
-            data.append({
-                "Nombre del Cliente": resultado["nombre_cliente"],
-                "Correo Electrónico": resultado["correo"],
-                "ID del Producto": resultado["id_producto"],
-                "Valor": resultado["valor"],
-                "Teléfono": resultado["telefono"],
-                "Fecha de Compra": resultado["fecha"]
-            })
-    
-    # Mostrar las primeras filas de los datos procesados
-    if data:
-        st.write("Primeras filas de los datos procesados:")
-        st.write(data[:5])
-    else:
-        st.warning("No se encontraron datos válidos.")
+            data.append(resultado)
 
     return pd.DataFrame(data)
 
 # Aplicación Streamlit
 def main():
-    st.title("Procesador de Archivo CSV")
-    st.write("Esta app fue elaborada por Felipe Devia.")  
-    st.write("Esta aplicación procesa el archivo [regex_productos.csv](https://github.com/gabrielawad/programacion-para-ingenieria/blob/main/archivos-datos/regex/regex_productos.csv) y genera un archivo CSV con la información solicitada.")
+    st.title("Procesador de Archivo CSV con Regex")
+    st.write("Procesa un archivo CSV y genera un archivo Excel.")
     
-    # Botón para generar el CSV
-    if st.button("Procesar Archivo y Descargar CSV"):
+    if st.button("Procesar Archivo y Descargar Excel"):
         try:
-            # Generar el DataFrame procesado
             df = generar_dataframe()
-            
-            # Verificar si hay datos procesados
-            if df.empty:
-                st.warning("El archivo procesado no contiene datos válidos. Verifique el formato del archivo fuente.")
-                return
-            
-            # Guardar como CSV
-            csv_file = "procesado_productos.csv"
-            df.to_csv(csv_file, index=False)
+            if not df.empty:
+                st.write("Contenido procesado:")
+                st.dataframe(df)
 
-            # Mostrar enlace de descarga
-            st.write("Descarga el archivo procesado a continuación:")
-            with open(csv_file, "rb") as file:
-                st.download_button(
-                    label="📥 Descargar CSV Procesado",
-                    data=file,
-                    file_name=csv_file,
-                    mime="text/csv",
-                )
+                # Guardar el DataFrame como Excel
+                excel_file = "procesado_productos.xlsx"
+                df.to_excel(excel_file, index=False)
+                with open(excel_file, "rb") as file:
+                    st.download_button(
+                        label="📥 Descargar Excel Procesado",
+                        data=file,
+                        file_name=excel_file,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+            else:
+                st.error("No se generaron datos válidos.")
         except Exception as e:
-            st.error(f"Ocurrió un error al procesar el archivo: {str(e)}")
+            st.error(f"Ocurrió un error: {str(e)}")
 
 if __name__ == "__main__":
     main()
