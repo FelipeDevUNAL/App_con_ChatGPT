@@ -1,8 +1,8 @@
 
-import streamlit as st
 import re
 import pandas as pd
 import requests
+import streamlit as st
 
 # URL del archivo CSV
 URL_CSV = "https://raw.githubusercontent.com/gabrielawad/programacion-para-ingenieria/main/archivos-datos/regex/regex_productos.csv"
@@ -17,19 +17,15 @@ def descargar_archivo_csv(url):
 
 # Función para procesar una línea
 def procesar_linea(linea):
-    # Dividir la línea en valores separados por comas
     valores = linea.split(",")
-
-    # Patrones regex para identificar los campos
     patrones = {
         "correo": r"\S+@\S+",
         "valor": r"\d+\.\d+",
         "telefono": r"\+57\s\d{10}",
         "fecha": r"\d{2}/\d{2}/\d{2}",
         "nombre_cliente": r"[A-Z][a-z]+(?:\s[A-Z][a-z]+)*",
-        "id_producto": r"^\d+$"  # Solo números enteros
+        "id_producto": r"^\d+$"
     }
-
     fila = {
         "Correo": None,
         "Valor": None,
@@ -39,7 +35,6 @@ def procesar_linea(linea):
         "ID del producto": None
     }
 
-    # Analizar cada valor para identificarlo
     for valor in valores:
         valor = valor.strip()
         if re.match(patrones["correo"], valor):
@@ -53,10 +48,9 @@ def procesar_linea(linea):
         elif re.match(patrones["id_producto"], valor):
             fila["ID del producto"] = valor
         elif re.match(patrones["nombre_cliente"], valor):
-            if fila["Nombre del cliente"] is None:  # Tomar el primer nombre que coincida
+            if fila["Nombre del cliente"] is None:
                 fila["Nombre del cliente"] = valor
 
-    # Validar que se identificaron todos los campos necesarios
     if all(fila.values()):
         return fila
     else:
@@ -66,44 +60,45 @@ def procesar_linea(linea):
 # Función para generar el DataFrame
 def generar_dataframe():
     data = []
-
-    # Descargar el archivo CSV
     contenido_csv = descargar_archivo_csv(URL_CSV)
-
-    # Procesar cada línea
     for linea in contenido_csv.splitlines():
         resultado = procesar_linea(linea)
         if resultado:
             data.append(resultado)
-
     return pd.DataFrame(data)
 
 # Aplicación Streamlit
 def main():
-    st.title("Procesador de Archivo CSV con Regex")
-    st.write("Procesa un archivo CSV y genera un archivo Excel.")
-    
-    if st.button("Procesar Archivo y Descargar Excel"):
+    st.title("Procesador de Archivo CSV")
+    st.write("Esta app fue elaborada por Felipe Devia.")  
+    st.write("Procesa un archivo CSV y genera un archivo con la información procesada.")
+
+    if st.button("Procesar Archivo y Descargar CSV"):
         try:
+            # Generar el DataFrame procesado
             df = generar_dataframe()
+
             if not df.empty:
-                st.write("Contenido procesado:")
+                # Mostrar un resumen del DataFrame
+                st.write("Datos procesados correctamente:")
                 st.dataframe(df)
 
-                # Guardar el DataFrame como Excel
-                excel_file = "procesado_productos.xlsx"
-                df.to_excel(excel_file, index=False)
-                with open(excel_file, "rb") as file:
+                # Guardar como CSV
+                csv_file = "procesado_productos.csv"
+                df.to_csv(csv_file, index=False)
+
+                # Descargar el archivo CSV
+                with open(csv_file, "rb") as file:
                     st.download_button(
-                        label="📥 Descargar Excel Procesado",
+                        label="📥 Descargar CSV Procesado",
                         data=file,
-                        file_name=excel_file,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        file_name=csv_file,
+                        mime="text/csv"
                     )
             else:
                 st.error("No se generaron datos válidos.")
         except Exception as e:
-            st.error(f"Ocurrió un error: {str(e)}")
+            st.error(f"Ocurrió un error: {e}")
 
 if __name__ == "__main__":
     main()
