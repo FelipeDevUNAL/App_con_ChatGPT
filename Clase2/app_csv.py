@@ -1,4 +1,14 @@
 
+
+import os
+import sys
+
+# Instalar openpyxl si no está disponible
+try:
+    import openpyxl
+except ImportError:
+    os.system(f"{sys.executable} -m pip install openpyxl --quiet")
+
 import re
 import pandas as pd
 import requests

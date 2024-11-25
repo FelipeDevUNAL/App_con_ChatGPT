@@ -2,6 +2,8 @@
 import re
 import streamlit as st
 
+
+
 def validar_nombres(nombre):
     """Valida que los nombres solo contengan caracteres alfabéticos e inicien con mayúsculas."""
     patron = r'^([A-Z][a-z]+)( [A-Z][a-z]+)*$'
