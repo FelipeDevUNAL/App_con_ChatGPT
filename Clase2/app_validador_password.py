@@ -53,9 +53,12 @@ def main():
                 st.error("Por favor, ingrese una contraseña antes de evaluar.")
             else:
                 es_segura, mensaje = evaluar_contrasena(contrasena)
-                st.success(mensaje) if es_segura else st.error(mensaje)
+                if es_segura:
+                    st.success(str(mensaje))
+                else:
+                    st.error(str(mensaje))
         except Exception as e:
-            st.error(f"Ocurrió un error inesperado: {e}")
+            st.error(f"Ocurrió un error inesperado: {str(e)}")
 
 if __name__ == "__main__":
     main()
